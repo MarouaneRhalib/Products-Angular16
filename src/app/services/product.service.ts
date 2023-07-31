@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import {Observable, of, throwError} from "rxjs";
-import {Product} from "../model/product.model";
-import {observableToBeFn} from "rxjs/internal/testing/TestScheduler";
+import {PageProduct, Product} from "../model/product.model";
 import {UUID} from "angular2-uuid";
 
 @Injectable({
@@ -15,11 +14,23 @@ export class ProductService {
       {id: UUID.UUID(), name : "Printer", price : 1200, promotion : false},
       {id: UUID.UUID(), name : "Smart Phone", price : 1400, promotion : true}
     ];
+    for (let i = 0; i <15 ; i++){
+      this.products.push({id: UUID.UUID(), name : "Computer", price : 6500, promotion : true});
+      this.products.push({id: UUID.UUID(), name : "Printer", price : 1200, promotion : false});
+      this.products.push({id: UUID.UUID(), name : "Smart Phone", price : 1400, promotion : true});
+    }
   }
 
   public  getAllProducts() : Observable<Product[]>{
-     return of(this.products);
+    return of(this.products);
   }
+  public  getPageProducts(page : number, size : number) : Observable<PageProduct>{
+    let index = page*size;
+    let totalPages = ~~(this.products.length / size);
+    if (this.products.length % size != 0 ) totalPages++;
+    let pageProducts = this.products.slice(index, index+ size );
+    return of({page:page, size:size, totalepages:totalPages, products:pageProducts});
+      }
   public deleteProduct(id : string) : Observable<boolean> {
     this.products = this.products.filter(p=>p.id!=id);
     return of(true)
@@ -33,9 +44,13 @@ export class ProductService {
     } else return throwError(() => ("Product not found"));
   }
 
-  public searchProduct(keyword : string) : Observable<Product[]>{
-    let products = this.products.filter(p=>p.name.includes(keyword));
-    return of(products);
+  public searchProduct(keyword : string, page : number, size : number) : Observable<PageProduct>{
+    let result = this.products.filter(p=>p.name.includes(keyword));
+    let index = page*size;
+    let totalPages = ~~(result.length / size);
+    if (this.products.length % size != 0 ) totalPages++;
+    let pageProducts = result.slice(index, index+ size );
+    return of({page:page, size:size, totalepages:totalPages, products:pageProducts});
   }
 
 

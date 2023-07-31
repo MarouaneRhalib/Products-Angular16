@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import {ProductService} from "../services/product.service";
 import {Product} from "../model/product.model";
-import {throwError} from "rxjs";
 import {FormBuilder, FormGroup} from "@angular/forms";
 
 @Component({
@@ -11,8 +10,12 @@ import {FormBuilder, FormGroup} from "@angular/forms";
 })
 export class ProductsComponent implements OnInit{
    products! : Array<Product>;
+   currentPage : number = 0;
+   pageSize : number = 5;
+   totalPages : number = 0;
    errorMessage! : String;
    searchFormGroup! : FormGroup;
+   currentAction : string="all";
 
 
   constructor(private productService : ProductService, private fb : FormBuilder) {
@@ -23,9 +26,19 @@ export class ProductsComponent implements OnInit{
     this.searchFormGroup = this.fb.group({
       keyword : this.fb.control(null)
     });
-    this.handelGetAllProducts();
+    this.handelGetPageProducts();
   }
-
+  handelGetPageProducts(){
+    this.productService.getPageProducts(this.currentPage, this.pageSize).subscribe({
+      next : (data )=>{
+        this.products = data.products;
+        this.totalPages = data.totalepages;
+      },
+      error : (err)=>{
+        this.errorMessage=err;
+      }
+    });
+  }
   handelGetAllProducts(){
     this.productService.getAllProducts().subscribe({
       next : (data )=>{
@@ -38,7 +51,7 @@ export class ProductsComponent implements OnInit{
   }
   handleDeleteProduct(p: Product) {
     let conf=confirm("Are you sure !");
-    if(conf === false) return;
+    if(!conf) return;
     this.productService.deleteProduct(p.id).subscribe({
       next : (data)=>{
        // this.handelGetAllProducts();
@@ -63,14 +76,26 @@ export class ProductsComponent implements OnInit{
   }
 
   handelSearchProduct() {
+    this.currentAction="search";
+    this.currentPage=0;
     let keyword = this.searchFormGroup.value.keyword;
-    this.productService.searchProduct(keyword).subscribe(
+    this.productService.searchProduct(keyword, this.currentPage, this.pageSize).subscribe(
       {
         next :(data )=>{
-          this.products=data;
+          this.products=data.products;
+          this.totalPages=data.totalepages;
         }
       }
     )
+
+  }
+
+  goToPage(i: number) {
+    this.currentPage=i;
+    if(this.currentAction==="all") this.handelGetPageProducts();
+    if(this.currentAction==="search") this.handelSearchProduct();
+
+
 
   }
 }
